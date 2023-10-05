@@ -19,7 +19,6 @@ def load_data(filepath):
 
 
 def main(command):
-    path = 'clipboard.json'
     data = load_data(SAVED_DATA)
 
     if command == 'save':
