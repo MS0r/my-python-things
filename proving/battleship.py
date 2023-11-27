@@ -12,6 +12,8 @@
 
 # The ship cannot overlap or be in contact with any other ship, neither by edge nor by corner.
 
+# https://www.codewars.com/kata/52bb6539a4cf1b12d90005b7/python
+
 def validate_battlefield(field):
     validated = [[False for y in range(10)] for x in range(10)]
     count = [0,4,3,2,1]
