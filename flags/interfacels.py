@@ -1,32 +1,24 @@
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
-from main import get_images_paths, load_json, save_json
+from json_data import load_json, save_json
 import os
 
-window = tk.Tk()
-style = ttk.Style()
-style.configure('Treeview',rowheight=35)
-
-window.geometry('800x800')
-window.title('Flags')
-
 class App(tk.Frame):
-
-    images = {}
-    usedpath = os.path.join(os.getcwd(),'used.json')
-    allitems = load_json(usedpath)
-    currentItems = []
-    data = []
-
-    def __init__(self,master,heig,wid):
+    
+    def __init__(self,master,heig,wid,images_path,json_path):
         super().__init__(master,height=heig,width=wid)
         self.pack()
-        self.search = self.EntryFrame()
-        self.table = self.TreeFrame()
-        self.putAllItems()
+        self.search = self.entry_frame()
+        self.table = self.tree_frame()
+        self.json_path = json_path
+        self.images_path = images_path
+        self.all_items = load_json(json_path,images_path)
+        self.images = {}
+        self.current_items = []
+        self.put_all_items()
 
-    def EntryFrame(self):
+    def entry_frame(self):
         search_ent_var = tk.StringVar()
         entryFrame = tk.Frame(self)
         self.update()
@@ -37,14 +29,14 @@ class App(tk.Frame):
         
         search_ent = tk.Entry(entryFrame,textvariable=search_ent_var)
         search_ent.grid(row=0,column=1,padx=5)
-        search_ent_var.trace_add('write',self.searchFunction)
+        search_ent_var.trace_add('write',self.search_function)
 
-        used_button = tk.Button(entryFrame,text="Put as used", command=self.putToUsed)
+        used_button = tk.Button(entryFrame,text="Put as used", command=self.put_to_used)
         used_button.grid(row=0,column=2,padx=20)
 
         return search_ent_var
 
-    def TreeFrame(self):
+    def tree_frame(self):
         treeFrame = tk.Frame(self)
         treeFrame.place(x=10,y=50,width=800,height=700)
 
@@ -62,47 +54,43 @@ class App(tk.Frame):
 
         return table
     
-    def searchFunction(self,*args):
-        search = myapp.search.get().capitalize()
-        for name in self.allitems:
-            if search in name and name not in self.currentItems:
-                self.table.insert('',0,values = (name,self.allitems[name]),image=self.images[name])
-                self.currentItems.append(name)
-            elif search not in name and name in self.currentItems:
-                self.deleteForName(name)
-        self.sortHeading('flags',False)
+    def search_function(self,*args):
+        search = self.search.get().capitalize()
+        for name in self.all_items:
+            if search in name and name not in self.current_items:
+                self.table.insert('',0,values = (name,self.all_items[name]),image=self.images[name])
+                self.current_items.append(name)
+            elif search not in name and name in self.current_items:
+                self.delete_for_name(name)
+        self.sort_heading('flags',False)
 
         
-    def sortHeading(self,col,reverse):
+    def sort_heading(self,col,reverse):
         data = [(self.table.set(child,'flags'),child) for child in self.table.get_children()]
         data.sort(reverse=reverse)
         
         for index, (val,child) in enumerate(data):
             self.table.move(child,'',index)
 
-        self.table.heading(col,command=lambda:self.sortHeading(col,not reverse))
+        self.table.heading(col,command=lambda:self.sort_heading(col,not reverse))
 
-    def deleteForName(self,name_flag):
+    def delete_for_name(self,name_flag):
         aux = {self.table.set(child,'flags'):child for child in self.table.get_children()}
         self.table.delete(aux[name_flag])
-        self.currentItems.remove(name_flag)
+        self.current_items.remove(name_flag)
 
-    def putToUsed(self):
+    def put_to_used(self):
         index = self.table.selection()[0]
         name = self.table.item(index)['values'][0]
-        self.allitems[name] = True
-        save_json(self.usedpath,self.allitems)
-        self.deleteForName(name)
-        self.searchFunction()
-
-    def putAllItems(self):
-        for path in get_images_paths():
+        self.all_items[name] = True
+        save_json(self.usedpath,self.all_items)
+        self.delete_for_name(name)
+        self.search_function()
+        
+    def put_all_items(self):
+        for path in self.images_path:
             name = os.path.basename(path[:path.find('.')])
             with Image.open(path) as img_flag:
                 self.images[name] = ImageTk.PhotoImage(img_flag.resize((50,25)))
-            self.table.insert(parent="",index=tk.END,image=self.images[name],values=(name,self.allitems[name]))
-            self.currentItems.append(name)
-
-myapp = App(window,800,800) 
-
-myapp.mainloop()
+            self.table.insert(parent="",index=tk.END,image=self.images[name],values=(name,self.all_items[name]))
+            self.current_items.append(name)
