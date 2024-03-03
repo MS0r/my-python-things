@@ -2,9 +2,9 @@ import os
 import sys
 import tkinter as tk
 from tkinter import ttk
-from get_images import (make_directory, get_flags_url,save_images)
+from src.get_images import (make_directory, get_flags_url,save_images)
 from interfacels import App
-from json_data import get_images_paths
+from src.json_data import get_images_paths
 
 #get_images initialization
 cwd = os.getcwd()

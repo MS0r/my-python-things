@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
-from json_data import load_json, save_json
 import os
+from src.country import Country
 
 class App(tk.Frame):
     
@@ -11,11 +11,12 @@ class App(tk.Frame):
         self.pack()
         self.search = self.entry_frame()
         self.table = self.tree_frame()
-        self.json_path = json_path
-        self.images_path = images_path
-        self.all_items = load_json(json_path,images_path)
+        self.countries = Country(json_path,images_path)
+        # self.json_path = json_path
+        # self.images_path = images_path
+        # self.all_items = load_json(json_path,images_path)
         self.images = {}
-        self.current_items = []
+        self.current_items = set()
         self.put_all_items()
 
     def entry_frame(self):
@@ -29,10 +30,12 @@ class App(tk.Frame):
         
         search_ent = tk.Entry(entryFrame,textvariable=search_ent_var)
         search_ent.grid(row=0,column=1,padx=5)
-        search_ent_var.trace_add('write',self.search_function)
 
+        search_button = tk.Button(entryFrame,text="Search",command=self.search_function)
+        search_button.grid(row=0,column=2,padx=20)
+        
         used_button = tk.Button(entryFrame,text="Put as used", command=self.put_to_used)
-        used_button.grid(row=0,column=2,padx=20)
+        used_button.grid(row=0,column=3,padx=20)
 
         return search_ent_var
 
@@ -56,12 +59,19 @@ class App(tk.Frame):
     
     def search_function(self,*args):
         search = self.search.get().capitalize()
-        for name in self.all_items:
-            if search in name and name not in self.current_items:
-                self.table.insert('',0,values = (name,self.all_items[name]),image=self.images[name])
-                self.current_items.append(name)
-            elif search not in name and name in self.current_items:
-                self.delete_for_name(name)
+        current = self.countries.search_function_levenshetein(search)
+
+        to_delete = self.current_items.difference(current)
+        to_add = current.difference(self.current_items)
+        self.current_items = current
+
+        aux = {self.table.set(child,'flags'):child for child in self.table.get_children()}
+        indexes_to_delete = self.countries.delete_for_names(to_delete,aux)
+
+        for idx in indexes_to_delete:
+            self.table.delete(idx)
+        for name in to_add:
+            self.table.insert('',0,image=self.images[name],values=(name,self.countries.get_state(name)))
         self.sort_heading('flags',False)
 
         
@@ -74,23 +84,20 @@ class App(tk.Frame):
 
         self.table.heading(col,command=lambda:self.sort_heading(col,not reverse))
 
-    def delete_for_name(self,name_flag):
-        aux = {self.table.set(child,'flags'):child for child in self.table.get_children()}
-        self.table.delete(aux[name_flag])
-        self.current_items.remove(name_flag)
-
     def put_to_used(self):
         index = self.table.selection()[0]
         name = self.table.item(index)['values'][0]
-        self.all_items[name] = True
-        save_json(self.usedpath,self.all_items)
-        self.delete_for_name(name)
+        
+        self.countries.put_to_used(name)
+        self.table.delete(index)
+        self.current_items.remove(name)
         self.search_function()
         
     def put_all_items(self):
-        for path in self.images_path:
+        images_path = self.countries.get_images()
+        for path in images_path:
             name = os.path.basename(path[:path.find('.')])
             with Image.open(path) as img_flag:
                 self.images[name] = ImageTk.PhotoImage(img_flag.resize((50,25)))
-            self.table.insert(parent="",index=tk.END,image=self.images[name],values=(name,self.all_items[name]))
-            self.current_items.append(name)
+            self.table.insert(parent="",index=tk.END,image=self.images[name],values=(name,self.countries.get_state(name)))
+            self.current_items.add(name)
