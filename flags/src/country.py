@@ -8,9 +8,11 @@ class Country:
         self._urls = load_json(json_path,images_path)
     
     def search_function(self,search):
+        srch = self.remove_accents(search).lower()
         matched = set()
         for name in self._urls:
-            if search in name:
+            contry = self.remove_accents(name).lower()
+            if srch in contry:
                 matched.add(name)
         return matched
 

@@ -4,18 +4,11 @@ import tkinter as tk
 from tkinter import ttk
 from src.get_images import (make_directory, get_flags_url,save_images)
 from interfacels import App
-from src.json_data import get_images_paths
+from paths import (json_path,flags_path,images_path)
 
 #get_images initialization
-cwd = os.getcwd()
-dir_name = sys.argv[0] or 'flags'
-
-flags_path = os.path.join(cwd,dir_name,'flags_images')
-json_path = os.path.join(cwd,dir_name,'used.json')
-
 make_directory(flags_path)
 save_images(flags_path,get_flags_url())
-images_path = get_images_paths(flags_path)
 
 #App initialization
 window = tk.Tk()
