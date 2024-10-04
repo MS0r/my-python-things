@@ -1,4 +1,4 @@
-*.json
+used.json
 #Not get flags_images
 flags_images
 #Pycache compiled code
